@@ -1,0 +1,68 @@
+.landing-page .header {
+    background: #fff;
+    padding: 40px 0;
+}
+
+.logo a {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.branding img {
+    width: 300px;
+}
+
+.branding .blazored {
+    color: #fff;
+}
+
+.branding .project {
+    position: absolute;
+    font-size: 24px;
+    font-weight: 700;
+    bottom: -7px;
+    left: 90px;
+    color: #ff6600;
+}
+
+.breadcrumb .breadcrumb-item a {
+    color: #4f4c4c;
+    font-weight: 700;
+}
+
+.breadcrumb .breadcrumb-item a:hover {
+    color: #4f4c4c;
+}
+
+.breadcrumb .breadcrumb-item,
+.breadcrumb li.active {
+    color: #4f4c4c;
+}
+
+.top-search-box {
+    display: flex;
+    flex-direction: column;
+    align-items: inherit;
+}
+
+.top-search-box a {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+    .top-search-box a:first-child {
+        margin-bottom: 10px;
+    }
+        .btn-orange, a.btn-orange {
+    background-color: transparent;
+    border: 1px solid #ff6600;
+    color: #4f4c4c !important;
+}
+
+    .btn-orange:hover, .btn-orange:focus, .btn-orange:active, .btn-orange.active, .btn-orange.hover, a.btn-orange:hover, a.btn-orange:focus, a.btn-orange:active, a.btn-orange.active, a.btn-orange.hover {
+        background: #ff6600;
+        color: #fff !important;
+        border: 1px solid #ff6600;
+    }

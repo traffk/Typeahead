@@ -1,0 +1,10 @@
+﻿<section id="@Id" class="doc-section">
+    <h2 class="section-title">@Title</h2>
+    @ChildContent
+</section>
+
+@code {
+    [Parameter] public string Title { get; set; }
+    [Parameter] public string Id { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+}

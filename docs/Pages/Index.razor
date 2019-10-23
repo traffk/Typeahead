@@ -1,0 +1,120 @@
+﻿@page "/"
+
+<header id="header" class="header">
+    <div class="container">
+        <div class="branding">
+            <h1 class="logo">
+                <a href="/">
+                    <img src="images/logo.png" alt="Blazored Logo" />
+                    <span class="project">Typeahead</span>
+                </a>
+            </h1>
+
+        </div>
+
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="https://docs.blazored.com">Blazored Docs</a></li>
+            <li class="breadcrumb-item active">Typeahead</li>
+        </ol>
+
+        <div class="top-search-box">
+            <a href="https://www.nuget.org/packages/Blazored.Typeahead/" class="btn btn-orange" target="_blank">
+                <i class="fas fa-cube"></i> Available on NuGet
+            </a>
+            <a href="https://github.com/Blazored/Typeahead" class="btn btn-orange" target="_blank">
+                <i class="fab fa-github"></i> GitHub Repository
+            </a>
+        </div>
+
+    </div>
+</header>
+
+<div class="doc-wrapper">
+    <div class="container">
+
+        <div class="doc-body row">
+            <div class="doc-content col-md-9 col-12 order-1">
+                <div class="content-inner">
+
+                    <Section Id="getting-started" Title="Getting Started">
+                        <div class="section-block">
+                            <h3 id="installation">Installation</h3>
+                            <p>You can install from NuGet using the following command:</p>
+                            <p><code>Install-Package Blazored.Typeahead</code></p>
+                            <p>Or via the Visual Studio package manger.</p>
+                        </div>
+                        <div class="section-block">
+                            <h3 id="setup">Setup</h3>
+                            <p>Blazor Server applications will need to include the following CSS and JS files in their <code>_Host.cshtml</code>.</p>
+                            <p>In the <code>head</code> tag add the following CSS.</p>
+                            <pre><code class="language-markup">&lt;script src="_content/Blazored.Typeahead/blazored-typeahead.js"&gt;/script&gt;</code></pre>
+                            <p>
+                                <strong>NOTE:</strong> If you're using Blazor WebAssembly then these files will get added to your `index.html` automagically.
+                            </p>
+                            <p>It would also be a benefit to add this using statement, <code>@@using Blazored.Typeahead.Forms</code>, to your main <code>_Imports.razor</code>. This will make referencing the component a bit easier.</p>
+                        </div>
+                    </Section>
+
+                    <Section Id="configuration" Title="Configuration">
+                        <div class="section-block">
+                            <p>
+                                The component can be used standalone or as part of a form. When used in a form the control fully integrates with Blazors forms
+                                and authentication system.
+                            </p>
+
+                            <p>Below is a list of all the options available on the Typeahead.</p>
+
+                            <h6>Templates</h6>
+                            <ul>
+                                <li><code>ResultTemplate</code> <em>(Required)</em> - Allows the user to define a template for a result in the results list</li>
+                                <li><code>SelectedTemplate</code> <em>(Required)</em> - Allows the user to define a template for a selected item</li>
+                                <li><code>NotFoundTemplate</code> - Allows the user to define a template when no items are found</li>
+                                <li><code>FooterTemplate</code> - Allows the user to define a template which is displayed at the end of the results list</li>
+                            </ul>
+
+                            <h6>Parameters</h6>
+                            <ul>
+                                <li><code>MinimumLength</code> <em>(Optional - Default: 1)</em> - Minimum number of characters before starting a search</li>
+                                <li><code>Debounce</code> <em>(Optional - Default: 300)</em> - Time to wait after last keypress before starting a search</li>
+                                <li><code>MaximumSuggestions</code> <em>(Optional - Default: 10)</em> - Controls the amount of suggestions which are shown</li>
+                                <li><code>Disabled</code> <em>(Optional - Default: false)</em> - Marks the control as disabled and stops any interaction</li>
+                                <li><code>EnableDropDown</code> <em>(Optional - Default: false)</em> - Allows the control to behave as a dropdown</li>
+                            </ul>
+
+                            <p>
+                                The control also requires a <code>SearchMethod</code> to be provided with the following signature <code>Task&lt;&lt;TItem&gt;&gt;(string searchText)</code>.
+                                The control will invoke this method passing the text the user has typed into the control. You can then query your data source and
+                                return the result as an <code>IEnumerable</code> for the control to render.
+                            </p>
+
+                            <p>
+                                If you wish to bind the result of the selection in the control to a different type than the type used in the search this is also possible. For example, if you passed in a list
+                                of <code>Person</code> but when a <code>Person</code> was selected you wanted the control to bind to an `int` value which might be the <code>Id</code> of the selected 
+                                <code>Person</code>, you can achieve this by providing a <code>ConvertMethod</code> The convert method will be invoked by the control when a selection is made and will 
+                                be passed the type selected. The method will need to handle the conversion and return the new type.
+                            </p>
+                        </div>
+                    </Section>
+
+                </div>
+            </div>
+
+            <div class="doc-sidebar col-md-3 col-12 order-0 d-none d-md-flex">
+                <div id="doc-nav" class="doc-nav">
+
+                    <nav id="doc-menu" class="nav doc-menu flex-column sticky">
+                        <a class="nav-link scrollto" href="#getting-started">Getting Started</a>
+                        <nav class="doc-sub-menu nav flex-column">
+                            <a class="nav-link scrollto" href="#installation">Installation</a>
+                            <a class="nav-link scrollto" href="#setup">Setup</a>
+                        </nav>
+
+                        <a class="nav-link scrollto" href="#configuration">Configuration</a>
+                    </nav>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
