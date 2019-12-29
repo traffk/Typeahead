@@ -11,17 +11,15 @@ using System.Timers;
 
 namespace Blazored.Typeahead
 {
-    public class BlazoredTypeaheadBase<TItem, TValue> : ComponentBase, IDisposable
+    public partial class BlazoredTypeahead<TItem, TValue> : ComponentBase, IDisposable
     {
         private EditContext _editContext;
         private FieldIdentifier _fieldIdentifier;
         private Timer _debounceTimer;
         private string _searchText = string.Empty;
         private bool _eventsHookedUp = false;
-
-        protected ElementReference searchInput;
-        protected ElementReference mask;
-        protected ElementReference typeahead;
+        private ElementReference _searchInput;
+        private ElementReference _mask;
 
         [Inject] private IJSRuntime JSRuntime { get; set; }
 
@@ -41,6 +39,7 @@ namespace Blazored.Typeahead
         [Parameter] public RenderFragment NotFoundTemplate { get; set; }
         [Parameter] public RenderFragment<TItem> ResultTemplate { get; set; }
         [Parameter] public RenderFragment<TValue> SelectedTemplate { get; set; }
+        [Parameter] public RenderFragment HeaderTemplate { get; set; }
         [Parameter] public RenderFragment FooterTemplate { get; set; }
 
         [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object> AdditionalAttributes { get; set; }
@@ -49,13 +48,17 @@ namespace Blazored.Typeahead
         [Parameter] public int MaximumSuggestions { get; set; } = 10;
         [Parameter] public bool Disabled { get; set; } = false;
         [Parameter] public bool EnableDropDown { get; set; } = false;
+        [Parameter] public bool ShowDropDownOnFocus { get; set; } = false;
 
-        protected bool IsSearching { get; private set; } = false;
-        protected bool IsShowingSuggestions { get; private set; } = false;
-        protected bool IsShowingMask { get; private set; } = false;
-        protected TItem[] Suggestions { get; set; } = new TItem[0];
-        protected int SelectedIndex { get; set; }
-        protected string SearchText
+        [Parameter] public bool StopPropagation { get; set; } = false;
+        [Parameter] public bool PreventDefault { get; set; } = false;
+
+        private bool IsSearching { get; set; } = false;
+        private bool IsShowingSuggestions { get; set; } = false;
+        private bool IsShowingMask { get; set; } = false;
+        private List<TItem> Suggestions { get; set; } = new List<TItem>();
+        private int SelectedIndex { get; set; }
+        private string SearchText
         {
             get => _searchText;
             set
@@ -65,7 +68,6 @@ namespace Blazored.Typeahead
                 if (value.Length == 0)
                 {
                     _debounceTimer.Stop();
-                    Suggestions = new TItem[0];
                     SelectedIndex = -1;
                 }
                 else if (value.Length >= MinimumLength)
@@ -75,6 +77,9 @@ namespace Blazored.Typeahead
                 }
             }
         }
+
+        private string FieldCssClasses => _editContext?.FieldCssClass(_fieldIdentifier) ?? "";
+        private bool IsMultiselect => ValuesExpression != null;
 
         protected override void OnInitialized()
         {
@@ -109,7 +114,7 @@ namespace Blazored.Typeahead
             _debounceTimer.Elapsed += Search;
 
             _editContext = CascadedEditContext;
-            _fieldIdentifier = IsMultiselect() ? FieldIdentifier.Create(ValuesExpression) : FieldIdentifier.Create(ValueExpression);
+            _fieldIdentifier = IsMultiselect ? FieldIdentifier.Create(ValuesExpression) : FieldIdentifier.Create(ValueExpression);
 
             Initialize();
         }
@@ -118,11 +123,7 @@ namespace Blazored.Typeahead
         {
             if ((firstRender && !Disabled) || (!_eventsHookedUp && !Disabled))
             {
-                await Interop.AddKeyDownEventListener(JSRuntime, searchInput);
-                await Interop.AddFocusOutEventListener(JSRuntime, typeahead);
-
-                Interop.OnFocusOutEvent += OnFocusOut;
-
+                await Interop.AddKeyDownEventListener(JSRuntime, _searchInput);
                 _eventsHookedUp = true;
             }
         }
@@ -139,76 +140,83 @@ namespace Blazored.Typeahead
             IsShowingMask = Value != null;
         }
 
-        protected bool IsMultiselect()
-        {
-            return ValuesExpression != null;
-        }
-
-        protected async Task RemoveValue(TValue item)
+        private async Task RemoveValue(TValue item)
         {
             var valueList = Values ?? new List<TValue>();
             if (valueList.Contains(item))
+            {
                 valueList.Remove(item);
+            }
 
             await ValuesChanged.InvokeAsync(valueList);
             _editContext?.NotifyFieldChanged(_fieldIdentifier);
         }
 
-        protected async Task HandleClear()
+        private async Task HandleClear()
         {
             SearchText = "";
+            IsShowingMask = false;
 
-            if (IsMultiselect())
+            if (IsMultiselect)
+            {
                 await ValuesChanged.InvokeAsync(new List<TValue>());
+            }
             else
+            {
                 await ValueChanged.InvokeAsync(default);
+            }
 
             _editContext?.NotifyFieldChanged(_fieldIdentifier);
 
             await Task.Delay(250); // Possible race condition here.
-            await Interop.Focus(JSRuntime, searchInput);
+            await Interop.Focus(JSRuntime, _searchInput);
         }
 
-        protected async Task HandleClickOnMask()
+        private async Task HandleClickOnMask()
         {
             SearchText = "";
             IsShowingMask = false;
 
             await Task.Delay(250); // Possible race condition here.
-            await Interop.Focus(JSRuntime, searchInput);
+            await Interop.Focus(JSRuntime, _searchInput);
         }
 
-        protected async Task ShowMaximumSuggestions()
+        private async Task HandleKeyUpOnShowDropDown(KeyboardEventArgs args)
         {
-            IsShowingSuggestions = !IsShowingSuggestions;
-
-            if (IsShowingSuggestions)
+            if (args.Key == "ArrowDown")
             {
-                SearchText = "";
-                IsSearching = true;
-                await InvokeAsync(StateHasChanged);
-
-                Suggestions = (await SearchMethod?.Invoke(_searchText)).Take(MaximumSuggestions).ToArray();
-
-                IsSearching = false;
-                await InvokeAsync(StateHasChanged);
+                MoveSelection(1);
+            }
+            else if (args.Key == "ArrowUp")
+            {
+                MoveSelection(-1);
+            }
+            else if (args.Key == "Escape")
+            {
+                Initialize();
+            }
+            else if (args.Key == "Enter" && Suggestions.Count() == 1)
+            {
+                await SelectTheFirstAndOnlySuggestion();
+            }
+            else if (args.Key == "Enter" && SelectedIndex >= 0 && SelectedIndex < Suggestions.Count())
+            {
+                await SelectResult(Suggestions[SelectedIndex]);
+            }
+            else if (args.Key == "Enter")
+            {
+                await ShowMaximumSuggestions();
             }
         }
 
-        protected async Task HandleKeyUpOnShowMaximum(KeyboardEventArgs args)
-        {
-            if (args.Key == "Enter")
-                await ShowMaximumSuggestions();
-        }
-
-        protected async Task HandleKeyUpOnMask(KeyboardEventArgs args)
+        private async Task HandleKeyUpOnMask(KeyboardEventArgs args)
         {
             switch (args.Key)
             {
                 case "Enter":
                     IsShowingMask = false;
                     await Task.Delay(250); // Possible race condition here.
-                    await Interop.Focus(JSRuntime, searchInput);
+                    await Interop.Focus(JSRuntime, _searchInput);
                     break;
                 case "Backspace":
                 case "Delete":
@@ -219,30 +227,81 @@ namespace Blazored.Typeahead
             }
         }
 
-        public async Task HandleKeyup(KeyboardEventArgs args)
+        private async Task HandleKeyup(KeyboardEventArgs args)
         {
+            if ((args.Key == "ArrowDown" || args.Key == "Enter") && EnableDropDown && !IsShowingSuggestions)
+            {
+                await ShowMaximumSuggestions();
+            }
+
             if (args.Key == "ArrowDown")
+            {
                 MoveSelection(1);
+            }
             else if (args.Key == "ArrowUp")
+            {
                 MoveSelection(-1);
+            }
+            else if (args.Key == "Escape")
+            {
+                Initialize();
+            }
+            else if (args.Key == "Enter" && Suggestions.Count() == 1)
+            {
+                await SelectTheFirstAndOnlySuggestion();
+            }
             else if (args.Key == "Enter" && SelectedIndex >= 0 && SelectedIndex < Suggestions.Count())
+            {
                 await SelectResult(Suggestions[SelectedIndex]);
+            }
         }
 
-        private void MoveSelection(int count)
+        private async Task HandleInputFocus()
         {
-            var index = SelectedIndex + count;
-
-            if (index >= Suggestions.Count())
-                index = 0;
-
-            if (index < 0)
-                index = Suggestions.Count() - 1;
-
-            SelectedIndex = index;
+            if (ShowDropDownOnFocus)
+            {
+                await ShowMaximumSuggestions();
+            }
         }
 
-        protected string GetSelectedSuggestionClass(TItem item, int index)
+        private bool _resettingControl = false;
+        private async Task ResetControl()
+        {
+            if (!_resettingControl)
+            {
+                _resettingControl = true;
+                await Task.Delay(200);
+                Initialize();
+                _resettingControl = false;
+            }
+        }
+
+        private async Task ShowMaximumSuggestions()
+        {
+            if (_resettingControl)
+            {
+                while (_resettingControl)
+                {
+                    await Task.Delay(150);
+                }
+            }
+
+            IsShowingSuggestions = !IsShowingSuggestions;
+
+            if (IsShowingSuggestions)
+            {
+                SearchText = "";
+                IsSearching = true;
+                await InvokeAsync(StateHasChanged);
+
+                Suggestions = (await SearchMethod?.Invoke(_searchText)).Take(MaximumSuggestions).ToList();
+
+                IsSearching = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        private string GetSelectedSuggestionClass(TItem item, int index)
         {
             const string resultClass = "blazored-typeahead__active-item";
             TValue value = ConvertMethod(item);
@@ -258,27 +317,29 @@ namespace Blazored.Typeahead
             }
 
             if (index == SelectedIndex)
+            {
                 return resultClass;
+            }
 
             return Equals(value, Value) ? resultClass : string.Empty;
         }
 
-        protected async void Search(Object source, ElapsedEventArgs e)
+        private async void Search(Object source, ElapsedEventArgs e)
         {
             IsSearching = true;
             await InvokeAsync(StateHasChanged);
-            Suggestions = (await SearchMethod?.Invoke(_searchText)).Take(MaximumSuggestions).ToArray();
+            Suggestions = (await SearchMethod?.Invoke(_searchText)).Take(MaximumSuggestions).ToList();
 
             IsSearching = false;
             IsShowingSuggestions = true;
             await InvokeAsync(StateHasChanged);
         }
 
-        protected async Task SelectResult(TItem item)
+        private async Task SelectResult(TItem item)
         {
             var value = ConvertMethod(item);
 
-            if (IsMultiselect())
+            if (IsMultiselect)
             {
                 var valueList = Values ?? new List<TValue>();
 
@@ -291,44 +352,72 @@ namespace Blazored.Typeahead
             }
             else
             {
+                Value = value;
                 await ValueChanged.InvokeAsync(value);
             }
 
             _editContext?.NotifyFieldChanged(_fieldIdentifier);
 
-            if (IsMultiselect())
+            if (IsMultiselect)
             {
-                await Interop.Focus(JSRuntime, searchInput);
+                await Interop.Focus(JSRuntime, _searchInput);
+            }
+            else
+            {
+                await Task.Delay(250);
+                await Interop.Focus(JSRuntime, _mask);
             }
         }
 
-        protected bool ShouldShowSuggestions()
+        private bool ShouldShowSuggestions()
         {
             return IsShowingSuggestions &&
                    Suggestions.Any();
         }
 
-        private bool IsSearchingOrDebouncing => IsSearching || _debounceTimer.Enabled;
+        private void MoveSelection(int count)
+        {
+            var index = SelectedIndex + count;
 
-        protected bool ShowNotFound()
+            if (index >= Suggestions.Count)
+            {
+                index = 0;
+            }
+
+            if (index < 0)
+            {
+                index = Suggestions.Count - 1;
+            }
+
+            SelectedIndex = index;
+        }
+
+        private Task SelectTheFirstAndOnlySuggestion()
+        {
+            SelectedIndex = 0;
+            return SelectResult(Suggestions[SelectedIndex]);
+        }
+
+        private bool IsSearchingOrDebouncing => IsSearching || _debounceTimer.Enabled;
+        private bool ShowNotFound()
         {
             return IsShowingSuggestions &&
                    !IsSearchingOrDebouncing &&
                    !Suggestions.Any();
         }
 
-        protected void OnFocusOut(object sender, EventArgs e)
-        {
-            Initialize();
-            InvokeAsync(StateHasChanged);
-        }
-
         public void Dispose()
         {
-            _debounceTimer.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
-            if (_eventsHookedUp)
-                Interop.OnFocusOutEvent -= OnFocusOut;
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _debounceTimer.Dispose();
+            }
         }
     }
 }

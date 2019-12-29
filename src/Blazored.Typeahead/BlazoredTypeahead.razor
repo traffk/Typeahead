@@ -2,17 +2,37 @@
 
 @typeparam TItem
 @typeparam TValue
-@inherits BlazoredTypeaheadBase<TItem, TValue>
 
-<div class="blazored-typeahead" @ref="typeahead">
+<div class="blazored-typeahead @FieldCssClasses">
 
     <div class="blazored-typeahead__controls">
 
         @if (Disabled)
         {
             <div class="blazored-typeahead__input-mask-wrapper blazored-typeahead__input-mask-wrapper--disabled">
-                <div class="blazored-typeahead__input-mask" tabindex="0">
-                </div>
+                @if (IsMultiselect)
+                {
+                    @if (Values != null)
+                    {
+                        @foreach (var value in Values)
+                        {
+                            <div class="blazored-typeahead__multi-value">
+                                <div class="blazored-typeahead__multi-value-label">
+                                    @SelectedTemplate(value)
+                                </div>
+                            </div>
+                        }
+                    }
+                }
+                else
+                {
+                    if (Value != null)
+                    {
+                        <div class="blazored-typeahead__input-mask" tabindex="0">
+                            @SelectedTemplate(Value)
+                        </div>
+                    }
+                }
             </div>
             <div class="blazored-typeahead__input-icon blazored-typeahead__input-icon--disabled">
                 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1" class="blazored-typeahead__down-arrow">
@@ -25,7 +45,7 @@
         }
         else
         {
-            @if (IsMultiselect())
+            @if (IsMultiselect)
             {
                 <div class="blazored-typeahead__input-multiselect-wrapper">
                     @if (Values != null)
@@ -39,6 +59,7 @@
                                 <button type="button"
                                         class="blazored-typeahead__multi-value-clear"
                                         title="Remove Item"
+                                        tabindex="-1"
                                         @onclick="@(() => RemoveValue(value))">
                                     <svg height="14" width="14" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
                                         <path d="M14.348 14.849c-0.469 0.469-1.229 0.469-1.697 0l-2.651-3.030-2.651 3.029c-0.469 0.469-1.229 0.469-1.697 0-0.469-0.469-0.469-1.229 0-1.697l2.758-3.15-2.759-3.152c-0.469-0.469-0.469-1.228 0-1.697s1.228-0.469 1.697 0l2.652 3.031 2.651-3.031c0.469-0.469 1.228-0.469 1.697 0s0.469 1.229 0 1.697l-2.758 3.152 2.758 3.15c0.469 0.469 0.469 1.229 0 1.698z" />
@@ -48,10 +69,14 @@
                         }
                     }
 
-                    <input @ref="searchInput"
+                    <input @ref="_searchInput"
                            @bind-value="SearchText"
                            @bind-value:event="oninput"
                            @onkeyup="HandleKeyup"
+                           @onkeyup:stopPropagation="@StopPropagation"
+                           @onkeyup:preventDefault="@PreventDefault"
+                           @onblur="ResetControl"
+                           @onfocus="HandleInputFocus"
                            @attributes="AdditionalAttributes"
                            autocomplete="off"
                            type="text"
@@ -63,7 +88,7 @@
                 if (IsShowingMask)
                 {
                     <div class="blazored-typeahead__input-mask-wrapper">
-                        <div class="blazored-typeahead__input-mask" @onclick="HandleClickOnMask" @onkeyup="HandleKeyUpOnMask" tabindex="0" @ref="mask">
+                        <div class="blazored-typeahead__input-mask" @onclick="HandleClickOnMask" @onkeyup="HandleKeyUpOnMask" tabindex="0" @ref="_mask">
                             @SelectedTemplate(Value)
                         </div>
                         <div class="blazored-typeahead__clear" @onclick="HandleClear" tabindex="-1">
@@ -71,10 +96,14 @@
                         </div>
                     </div>
                 }
-                <input @ref="searchInput"
+                <input @ref="_searchInput"
                        @bind-value="SearchText"
                        @bind-value:event="oninput"
                        @onkeyup="HandleKeyup"
+                       @onkeyup:stopPropagation="@StopPropagation"
+                       @onkeyup:preventDefault="@PreventDefault"
+                       @onblur="ResetControl"
+                       @onfocus="HandleInputFocus"
                        @attributes="AdditionalAttributes"
                        autocomplete="off"
                        type="text"
@@ -89,7 +118,7 @@
 
         @if (!Disabled && EnableDropDown)
         {
-            <div class="blazored-typeahead__input-icon" @onclick="ShowMaximumSuggestions" @onkeyup="HandleKeyUpOnShowMaximum" tabindex="@(IsShowingSuggestions ? "-1" : "0")">
+            <div class="blazored-typeahead__input-icon" @onclick="ShowMaximumSuggestions" @onkeyup="HandleKeyUpOnShowDropDown" @onblur="ResetControl" tabindex="@(IsShowingSuggestions ? "-1" : "0")">
                 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1" class="blazored-typeahead__down-arrow">
                     <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
                         <polygon id="Shape" points="0 0 24 0 24 24 0 24" />
@@ -103,7 +132,14 @@
     @if (ShouldShowSuggestions())
     {
         <div class="blazored-typeahead__results">
-            @for (var i = 0; i < Suggestions.Count(); i++)
+            @if (HeaderTemplate != null)
+            {
+                <div class="blazored-typeahead__results-header">
+                    @HeaderTemplate
+                </div>
+            }
+
+            @for (var i = 0; i < Suggestions.Count; i++)
             {
                 var item = Suggestions[i];
 
@@ -125,6 +161,13 @@
     else if (ShowNotFound())
     {
         <div class="blazored-typeahead__results">
+            @if (HeaderTemplate != null)
+            {
+                <div class="blazored-typeahead__results-header">
+                    @HeaderTemplate
+                </div>
+            }
+
             @if (NotFoundTemplate != null)
             {
                 <div class="blazored-typeahead__notfound">
