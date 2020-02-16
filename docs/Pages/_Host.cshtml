@@ -33,7 +33,7 @@
 <body class="landing-page">
 
     <app>
-        @(await Html.RenderComponentAsync<App>(RenderMode.ServerPrerendered))
+        <component type="typeof(App)" render-mode="ServerPrerendered" />
     </app>
 
     <!-- Main Javascript -->
