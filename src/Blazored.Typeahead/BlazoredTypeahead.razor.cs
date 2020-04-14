@@ -131,7 +131,8 @@ namespace Blazored.Typeahead
             {
                 await Interop.AddKeyDownEventListener(JSRuntime, _searchInput);
                 await JSRuntime.InvokeVoidAsync("blazoredTypeahead.addOnFocusInListener", _container, DotNetObjectReference.Create(this));
-                await JSRuntime.InvokeVoidAsync("blazoredTypeahead.addOnFocusOutListener", _container, DotNetObjectReference.Create(this));
+                await JSRuntime.InvokeVoidAsync("blazoredTypeahead.addOnClickListener", _container, DotNetObjectReference.Create(this));
+                //await JSRuntime.InvokeVoidAsync("blazoredTypeahead.addOnFocusOutListener", _container, DotNetObjectReference.Create(this));
                 _eventsHookedUp = true;
             }
 
@@ -144,7 +145,7 @@ namespace Blazored.Typeahead
             if (!firstRender && !IsShowingMask && _awaitingFocusOnMask)
             {
                 await JSRuntime.InvokeVoidAsync("blazoredTypeahead.setFocus", _mask);
-                _awaitingFocusOnInput = false;
+                _awaitingFocusOnMask = false;
             }
         }
 

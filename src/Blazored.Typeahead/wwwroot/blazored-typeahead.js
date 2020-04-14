@@ -43,5 +43,16 @@ window.blazoredTypeahead = {
             dotnetHelper.invokeMethodAsync("MarkNotFocused");
             element.classList.remove("focused");
         });
+    },
+    addOnClickListener: function (element, dotnetHelper) {
+        document.addEventListener("mousedown", function (element) {
+            //target = event.target.closest(".blazored-typeahead");     // the element clicked on
+            //element.closest(".blazored-typeahead");
+            //myTarget = document.getElementById("idBox");   // the element to keep focus
+            if (event.target.closest(".blazored-typeahead")) return;
+
+            dotnetHelper.invokeMethodAsync("MarkNotFocused");
+            element.classList.remove("focused");
+        });
     }
 };
