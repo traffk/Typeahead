@@ -18,8 +18,12 @@ namespace Blazored.Typeahead
         private Timer _debounceTimer;
         private string _searchText = string.Empty;
         private bool _eventsHookedUp = false;
+        private ElementReference _container;
         private ElementReference _searchInput;
         private ElementReference _mask;
+        private bool _isFocused = false;
+        private bool _awaitingFocusOnInput = false;
+        private bool _awaitingFocusOnMask = false;
 
         [Inject] private IJSRuntime JSRuntime { get; set; }
 
@@ -126,10 +130,37 @@ namespace Blazored.Typeahead
             if ((firstRender && !Disabled) || (!_eventsHookedUp && !Disabled))
             {
                 await Interop.AddKeyDownEventListener(JSRuntime, _searchInput);
-                await Interop.AddOnFocusEventListener(JSRuntime, _searchInput);
-                await Interop.AddOnBlurEventListener(JSRuntime, _searchInput);
+                await JSRuntime.InvokeVoidAsync("blazoredTypeahead.addOnFocusInListener", _container, DotNetObjectReference.Create(this));
+                await JSRuntime.InvokeVoidAsync("blazoredTypeahead.addOnFocusOutListener", _container, DotNetObjectReference.Create(this));
                 _eventsHookedUp = true;
             }
+
+            if (!firstRender && !IsShowingMask && _awaitingFocusOnInput)
+            {
+                await JSRuntime.InvokeVoidAsync("blazoredTypeahead.setFocus", _searchInput);
+                _awaitingFocusOnInput = false;
+            }
+
+            if (!firstRender && !IsShowingMask && _awaitingFocusOnMask)
+            {
+                await JSRuntime.InvokeVoidAsync("blazoredTypeahead.setFocus", _mask);
+                _awaitingFocusOnInput = false;
+            }
+        }
+
+        [JSInvokable]
+        public void MarkFocused()
+        {
+            _isFocused = true;
+            StateHasChanged();
+        }
+
+        [JSInvokable]
+        public void MarkNotFocused()
+        {
+            _isFocused = false;
+            ResetControl();
+            StateHasChanged();
         }
 
         protected override void OnParametersSet()
@@ -171,19 +202,19 @@ namespace Blazored.Typeahead
             }
 
             _editContext?.NotifyFieldChanged(_fieldIdentifier);
+            _awaitingFocusOnInput = true;
+            //await Task.Delay(250); // Possible race condition here.
+            //await Interop.Focus(JSRuntime, _searchInput);
 
-            await Task.Delay(250); // Possible race condition here.
-            await Interop.Focus(JSRuntime, _searchInput);
         }
 
-        private async Task HandleClickOnMask()
+        private void HandleClickOnMask()
         {
             SearchText = "";
             IsShowingMask = false;
-
-            StateHasChanged();
+            _awaitingFocusOnInput = true;
             //await Task.Delay(250); // Possible race condition here.
-            await Interop.Focus(JSRuntime, _searchInput);
+            //await JSRuntime.InvokeVoidAsync("blazoredTypeahead.setFocus", _searchInput);
         }
 
         private async Task HandleKeyUpOnShowDropDown(KeyboardEventArgs args)
@@ -234,8 +265,9 @@ namespace Blazored.Typeahead
             if (args.Key.Length == 1)
             {
                 IsShowingMask = false;
+                _awaitingFocusOnInput = true;
                 //await Task.Delay(250); // Possible race condition here.
-                await Interop.Focus(JSRuntime, _searchInput);
+                //await Interop.Focus(JSRuntime, _searchInput);
                 SearchText = args.Key;
             }
         }
@@ -278,7 +310,7 @@ namespace Blazored.Typeahead
         }
 
         private bool _resettingControl = false;
-        private async Task ResetControl()
+        private void ResetControl()
         {
             if (!_resettingControl)
             {
@@ -387,7 +419,8 @@ namespace Blazored.Typeahead
             else
             {
                 //await Task.Delay(250);
-                await Interop.Focus(JSRuntime, _mask);
+                _awaitingFocusOnMask = true;
+                //await Interop.Focus(JSRuntime, _mask);
             }
         }
 

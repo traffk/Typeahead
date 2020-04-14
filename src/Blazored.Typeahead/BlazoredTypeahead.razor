@@ -3,7 +3,10 @@
 @typeparam TItem
 @typeparam TValue
 
-<div class="blazored-typeahead @FieldCssClasses" tabindex="-1">
+@_isFocused.ToString()
+<div class="blazored-typeahead @FieldCssClasses" 
+     tabindex="-1" 
+     @ref="_container">
 
     <div class="blazored-typeahead__controls">
 
@@ -75,7 +78,6 @@
                            @onkeyup="HandleKeyup"
                            @onkeyup:stopPropagation="@StopPropagation"
                            @onkeyup:preventDefault="@PreventDefault"
-                           @onblur="ResetControl"
                            @onfocus="HandleInputFocus"
                            @attributes="AdditionalAttributes"
                            autocomplete="off"
@@ -102,7 +104,6 @@
                        @onkeyup="HandleKeyup"
                        @onkeyup:stopPropagation="@StopPropagation"
                        @onkeyup:preventDefault="@PreventDefault"
-                       @onblur="ResetControl"
                        @onfocus="HandleInputFocus"
                        @attributes="AdditionalAttributes"
                        autocomplete="off"

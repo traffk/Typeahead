@@ -20,9 +20,20 @@ namespace Blazored.Typeahead
         {
             await jsRuntime.InvokeVoidAsync("blazoredTypeahead.addOnFocusListener", element);
         }
+
         internal static async ValueTask AddOnBlurEventListener(IJSRuntime jsRuntime, ElementReference element)
         {
             await jsRuntime.InvokeVoidAsync("blazoredTypeahead.addOnBlurListener", element);
+        }
+
+        internal static async ValueTask AddOnFocusInEventListener(IJSRuntime jsRuntime, ElementReference element)
+        {
+            await jsRuntime.InvokeVoidAsync("blazoredTypeahead.addOnFocusInListener", element);
+        }
+
+        internal static async ValueTask AddOnFocusOutEventListener(IJSRuntime jsRuntime, ElementReference element)
+        {
+            await jsRuntime.InvokeVoidAsync("blazoredTypeahead.addOnFocusOutListener", element);
         }
     }
 }
