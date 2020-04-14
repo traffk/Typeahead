@@ -14,5 +14,19 @@ window.blazoredTypeahead = {
                 event.preventDefault();
             }
         });
+    },
+    addOnFocusListener: function (element) {
+        element.addEventListener("focus", function () {
+            let container = element.closest(".blazored-typeahead");
+
+            container.classList.add("focus");
+        });
+    },
+    addOnBlurListener: function (element) {
+        element.addEventListener("blur", function () {
+            let container = element.closest(".blazored-typeahead");
+
+            container.classList.remove("focus");
+        });
     }
 };

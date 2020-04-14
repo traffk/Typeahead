@@ -6,14 +6,23 @@ namespace Blazored.Typeahead
 {
     public static class Interop
     {
-        internal static ValueTask<object> Focus(IJSRuntime jsRuntime, ElementReference element)
+        internal static async ValueTask Focus(IJSRuntime jsRuntime, ElementReference element)
         {
-            return jsRuntime.InvokeAsync<object>("blazoredTypeahead.setFocus", element);
+            await jsRuntime.InvokeVoidAsync("blazoredTypeahead.setFocus", element);
         }
 
-        internal static ValueTask<object> AddKeyDownEventListener(IJSRuntime jsRuntime, ElementReference element)
+        internal static async ValueTask AddKeyDownEventListener(IJSRuntime jsRuntime, ElementReference element)
         {
-            return jsRuntime.InvokeAsync<object>("blazoredTypeahead.addKeyDownEventListener", element);
+            await jsRuntime.InvokeVoidAsync("blazoredTypeahead.addKeyDownEventListener", element);
+        }
+        
+        internal static async ValueTask AddOnFocusEventListener(IJSRuntime jsRuntime, ElementReference element)
+        {
+            await jsRuntime.InvokeVoidAsync("blazoredTypeahead.addOnFocusListener", element);
+        }
+        internal static async ValueTask AddOnBlurEventListener(IJSRuntime jsRuntime, ElementReference element)
+        {
+            await jsRuntime.InvokeVoidAsync("blazoredTypeahead.addOnBlurListener", element);
         }
     }
 }

@@ -29,8 +29,11 @@
 
 @if (FormModel.SelectedPerson != null)
 {
-    <br />
     <p><strong>Selected Person:</strong> @FormModel.SelectedPerson.Firstname @FormModel.SelectedPerson.Lastname</p>
+}
+else
+{
+    <p><strong>Selected Person:</strong> Nothing selected.</p>
 }
 
 <hr />
@@ -54,7 +57,7 @@
 
 @if (SelectedPerson != null)
 {
-    <p>Selected: @SelectedPerson.Firstname @SelectedPerson.Lastname</p>
+    <p><strong>Selected:</strong> @SelectedPerson.Firstname @SelectedPerson.Lastname</p>
 }
 
 <hr />

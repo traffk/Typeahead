@@ -126,6 +126,8 @@ namespace Blazored.Typeahead
             if ((firstRender && !Disabled) || (!_eventsHookedUp && !Disabled))
             {
                 await Interop.AddKeyDownEventListener(JSRuntime, _searchInput);
+                await Interop.AddOnFocusEventListener(JSRuntime, _searchInput);
+                await Interop.AddOnBlurEventListener(JSRuntime, _searchInput);
                 _eventsHookedUp = true;
             }
         }
@@ -179,7 +181,8 @@ namespace Blazored.Typeahead
             SearchText = "";
             IsShowingMask = false;
 
-            await Task.Delay(250); // Possible race condition here.
+            StateHasChanged();
+            //await Task.Delay(250); // Possible race condition here.
             await Interop.Focus(JSRuntime, _searchInput);
         }
 
@@ -231,7 +234,7 @@ namespace Blazored.Typeahead
             if (args.Key.Length == 1)
             {
                 IsShowingMask = false;
-                await Task.Delay(250); // Possible race condition here.
+                //await Task.Delay(250); // Possible race condition here.
                 await Interop.Focus(JSRuntime, _searchInput);
                 SearchText = args.Key;
             }
@@ -280,7 +283,7 @@ namespace Blazored.Typeahead
             if (!_resettingControl)
             {
                 _resettingControl = true;
-                await Task.Delay(200);
+                //await Task.Delay(200);
                 Initialize();
                 _resettingControl = false;
             }
@@ -383,7 +386,7 @@ namespace Blazored.Typeahead
             }
             else
             {
-                await Task.Delay(250);
+                //await Task.Delay(250);
                 await Interop.Focus(JSRuntime, _mask);
             }
         }
