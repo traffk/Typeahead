@@ -81,6 +81,7 @@
                            @onkeyup:stopPropagation="@StopPropagation"
                            @onkeyup:preventDefault="@PreventDefault"
                            @onfocus="HandleInputFocus"
+                           @onblur="HandleOnBlur"
                            autocomplete="off"
                            @attributes="AdditionalAttributes"
                            type="text"
@@ -111,6 +112,7 @@
                        @onkeyup:stopPropagation="@StopPropagation"
                        @onkeyup:preventDefault="@PreventDefault"
                        @onfocus="HandleInputFocus"
+                       @onblur="HandleOnBlur"
                        autocomplete="off"
                        @attributes="AdditionalAttributes"
                        type="text"
@@ -196,7 +198,7 @@
                 {
                     <div class="blazored-typeahead__notfound">
                         @NotFoundTemplate(SearchText)
-                    </div>    
+                    </div>
                 }
             }
             else
