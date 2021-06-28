@@ -25,6 +25,7 @@ namespace Blazored.Typeahead
 
         [CascadingParameter] private EditContext CascadedEditContext { get; set; }
 
+        [Parameter] public Func<TValue,string> ValueSearchTermConverter { get; set; }
         [Parameter] public TValue Value { get; set; }
         [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
         [Parameter] public Expression<Func<TValue>> ValueExpression { get; set; }
@@ -192,6 +193,10 @@ namespace Blazored.Typeahead
 
         private async Task HandleClickOnMask()
         {
+            if (string.IsNullOrEmpty(SearchText) && Value != null && ValueSearchTermConverter != null)
+            {
+                ControlText = ValueSearchTermConverter(Value);
+            }
             if (!PreserveSearchTermsBetweenInvocations)
             {
                 SearchText = "";
