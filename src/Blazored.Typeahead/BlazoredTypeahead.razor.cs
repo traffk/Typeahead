@@ -65,7 +65,7 @@ namespace Blazored.Typeahead
         private TItem[] Suggestions { get; set; } = new TItem[0];
         private int SelectedIndex { get; set; }
         private bool ShowHelpTemplate { get; set; } = false;
-        public string SearchText
+        private string SearchText
         {
             get => _searchText;
             set
@@ -82,6 +82,17 @@ namespace Blazored.Typeahead
                     _debounceTimer.Stop();
                     _debounceTimer.Start();
                 }
+            }
+        }
+
+        public string ControlText
+        {
+            get => SearchText;
+            set
+            {
+                _searchText = value;
+                _debounceTimer.Stop();
+                SelectedIndex = -1;
             }
         }
 
